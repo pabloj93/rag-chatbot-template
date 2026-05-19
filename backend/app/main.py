@@ -67,6 +67,11 @@ if _DIST.exists():
     )
 
     @app.get("/{full_path:path}", include_in_schema=False)
-    async def serve_spa(_: str) -> FileResponse:
-        """Catch-all: return index.html so React Router handles routing."""
+    async def serve_spa(full_path: str) -> FileResponse:
+        """Catch-all: return index.html so React Router handles routing.
+
+        Why `full_path` and not `_`: FastAPI interprets underscore-named
+        parameters as required query params, not path params. The name must
+        match the path variable declared above.
+        """
         return FileResponse(str(_DIST / "index.html"))
