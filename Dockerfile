@@ -1,0 +1,51 @@
+# Single-container image for Hugging Face Spaces.
+#
+# Why single-container: HF Spaces accepts exactly one Dockerfile per Space.
+# We solve this by building the React frontend in a Node stage, then copying
+# the static output into the Python image. FastAPI detects the `dist/` folder
+# at startup and serves it as static files, so the same port handles both
+# the API (/chat, /ingest) and the SPA (/).
+#
+# Port: HF Spaces exposes 7860 by default.
+# Local test: docker build -t rag-chatbot-hf . && docker run -p 7860:7860 --env-file .env rag-chatbot-hf
+
+
+# ─── Stage 1: build the React frontend ───────────────────────────────────────
+FROM node:20-alpine AS fe-builder
+
+WORKDIR /frontend
+COPY frontend/package*.json .
+RUN npm ci
+COPY frontend/ .
+
+# No VITE_BACKEND_URL → resolves to "" in useChat.ts → relative fetch("/chat")
+# → FastAPI (same origin, same container) handles the request. ✓
+ARG VITE_BACKEND_URL=""
+ENV VITE_BACKEND_URL=$VITE_BACKEND_URL
+RUN npm run build
+
+
+# ─── Stage 2: Python backend + frontend static files ─────────────────────────
+FROM python:3.11-slim
+
+WORKDIR /app
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    build-essential \
+    && rm -rf /var/lib/apt/lists/*
+
+COPY backend/requirements.txt .
+RUN pip install --no-cache-dir \
+    torch==2.12.0 \
+    --index-url https://download.pytorch.org/whl/cpu && \
+    pip install --no-cache-dir -r requirements.txt
+
+COPY backend/app ./app
+
+# Frontend build lives under /app/dist — main.py detects this and mounts
+# the assets + registers the SPA catch-all route automatically.
+COPY --from=fe-builder /frontend/dist ./dist
+
+EXPOSE 7860
+
+CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "7860"]

@@ -200,14 +200,16 @@ BM25 catches exact keyword matches (`web_search`, `anthropic-version`); vector s
 ## 🚢 Deploy to Hugging Face Spaces
 
 ```bash
-# Build the single-container image locally to test
-docker build -f Dockerfile.hf -t rag-chatbot-hf .
+# Test the single-container image locally before pushing
+docker build -t rag-chatbot-hf .
+docker run -p 7860:7860 --env-file .env rag-chatbot-hf
 
-# Then push to HF via the Spaces Docker SDK
-# See: https://huggingface.co/docs/hub/spaces-sdks-docker
+# Then add the HF Space as a git remote and push
+git remote add hf https://huggingface.co/spaces/YOUR_USERNAME/YOUR_SPACE
+git push hf main
 ```
 
-The `Dockerfile.hf` builds the React frontend (no `VITE_BACKEND_URL` → relative URLs) and bundles it into the Python image. FastAPI detects `dist/` at startup and serves the SPA alongside the API on port 7860.
+The root `Dockerfile` builds the React frontend (no `VITE_BACKEND_URL` → relative URLs) and bundles it into the Python image. FastAPI detects `dist/` at startup and serves the SPA alongside the API on port 7860.
 
 ---
 
