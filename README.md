@@ -1,3 +1,12 @@
+---
+title: RAG Chatbot Template
+emoji: 🤖
+colorFrom: blue
+colorTo: purple
+sdk: docker
+pinned: false
+---
+
 # rag-chatbot-template
 
 > A production-grade RAG chatbot that answers questions about the **Anthropic / Claude documentation** — built with Claude itself. A meta portfolio piece demonstrating end-to-end mastery of the modern LLM engineering stack.
