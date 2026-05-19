@@ -27,6 +27,7 @@ from pydantic import BaseModel, Field
 from app.config import settings
 from app.services.rag_chain import (
     build_answer_chain,
+    contextualize_query,
     format_docs,
     get_retriever,
     make_source,
@@ -107,14 +108,17 @@ def chat(req: ChatRequest) -> dict:
     handler = make_langfuse_handler(session_id)
 
     t0 = time.perf_counter()
-    # Stage 1: vector search returns top_k_candidates (broad).
-    # Stage 2: cross-encoder re-ranks to top_k (precise).
-    docs = rerank(question, get_retriever().invoke(question), top_n=settings.top_k)
+    # Rewrite short/ambiguous follow-ups as standalone queries before retrieval.
+    # "what's the cost?" → "what is the cost of prompt caching?" (with history).
+    # The original `question` is still used for the LLM answer.
+    retrieval_query = contextualize_query(question, history)
+    # Stage 1: BM25 + vector (broad). Stage 2: cross-encoder re-ranks (precise).
+    docs = rerank(retrieval_query, get_retriever().invoke(retrieval_query), top_n=settings.top_k)
     answer = build_answer_chain().invoke(
         {
             "context": format_docs(docs),
             "history": history,
-            "question": question,
+            "question": question,  # original phrasing for natural answer
         },
         config={"callbacks": [handler]},
     )
@@ -153,9 +157,10 @@ async def chat_stream(req: ChatRequest):
     async def event_stream():
         t0 = time.perf_counter()
         try:
-            # Stage 1: vector search (broad). Stage 2: cross-encoder (precise).
-            # Sources emitted first so the frontend renders them while tokens arrive.
-            docs = rerank(question, get_retriever().invoke(question), top_n=settings.top_k)
+            # Contextualize ambiguous follow-ups before retrieval.
+            retrieval_query = contextualize_query(question, history)
+            # Stage 1: BM25 + vector (broad). Stage 2: cross-encoder (precise).
+            docs = rerank(retrieval_query, get_retriever().invoke(retrieval_query), top_n=settings.top_k)
             sources = [make_source(d) for d in docs]
             yield _sse("sources", sources)
 

@@ -15,14 +15,19 @@ first). Splitting the pipeline keeps the streaming flow obvious and avoids
 running the retriever twice.
 """
 
+import logging
+
 from langchain_anthropic import ChatAnthropic
 from langchain_core.documents import Document
+from langchain_core.messages import BaseMessage, HumanMessage
 from langchain_core.output_parsers import StrOutputParser
 from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
 from langchain_core.runnables import Runnable
 from langchain_core.vectorstores import VectorStoreRetriever
 
 from app.config import settings
+
+logger = logging.getLogger(__name__)
 from app.services.vectorstore import get_ensemble_retriever
 
 
@@ -50,6 +55,53 @@ When you answer with documentation content, end your message with a
 Context:
 {context}
 """
+
+
+def contextualize_query(question: str, history: list[BaseMessage]) -> str:
+    """Rewrite `question` as a standalone retrieval query using conversation history.
+
+    Why this exists: short follow-ups like "what's the cost?" are ambiguous
+    without context. The retriever only sees the query string — it has no
+    access to the conversation history. Rewriting to "what is the cost of
+    prompt caching?" gives BM25 + Pinecone the terms they need to find the
+    right chunks.
+
+    The original `question` is still passed to the LLM chain so Claude answers
+    in the user's natural voice. Only retrieval uses the rewritten query.
+
+    Returns the original question unchanged if there is no history.
+    Typical cost: ~100 tokens on Haiku = ~$0.00003 per call.
+    """
+    if not history:
+        return question
+
+    # Last 2 turns (4 messages) is enough context without burning extra tokens.
+    history_text = "\n".join(
+        f"{'User' if isinstance(m, HumanMessage) else 'Assistant'}: {m.content[:300]}"
+        for m in history[-4:]
+    )
+
+    llm = ChatAnthropic(
+        model=settings.claude_model,
+        anthropic_api_key=settings.anthropic_api_key,
+        temperature=0,
+        max_tokens=80,
+    )
+
+    prompt = (
+        "Rewrite the follow-up as a standalone search query. "
+        "Return ONLY the rewritten query, no extra text. "
+        "If it is already standalone, return it unchanged.\n\n"
+        f"Conversation:\n{history_text}\n\n"
+        f"Follow-up: {question}\n\n"
+        "Standalone query:"
+    )
+
+    result = llm.invoke(prompt)
+    rewritten = result.content.strip().strip('"').strip("'")
+    if rewritten and rewritten != question:
+        logger.debug("Query contextualized: %r -> %r", question, rewritten)
+    return rewritten or question
 
 
 def get_retriever():
