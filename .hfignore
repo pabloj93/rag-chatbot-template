@@ -1,0 +1,9 @@
+# Files to exclude from Hugging Face Spaces — binary assets live on GitHub,
+# not needed in the Space deployment.
+docs/screenshots/
+*.gif
+*.png
+*.jpg
+PRD.md
+evaluation/results/
+backend/data/
