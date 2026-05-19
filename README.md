@@ -15,6 +15,7 @@ pinned: false
 [![FastAPI](https://img.shields.io/badge/FastAPI-0.115-009688.svg)](https://fastapi.tiangolo.com)
 [![LangChain](https://img.shields.io/badge/LangChain-0.3-1C3C3C.svg)](https://python.langchain.com)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+[![HF Spaces](https://img.shields.io/badge/🤗%20HF%20Spaces-Live%20Demo-orange)](https://huggingface.co/spaces/pabloj93/rag-chatbot-template)
 
 ---
 
@@ -92,6 +93,8 @@ This builds the backend (~569 MB, torch-cpu) and frontend (~93 MB, nginx) images
 ```bash
 curl -X POST http://localhost:8000/ingest
 ```
+
+> **Live demo:** [pabloj93-rag-chatbot-template.hf.space](https://pabloj93-rag-chatbot-template.hf.space) — hosted on Hugging Face Spaces (may take ~30s to wake from sleep).
 
 This scrapes 99 Anthropic documentation pages, splits them into ~4,800 chunks, embeds them locally, and upserts to Pinecone.
 
