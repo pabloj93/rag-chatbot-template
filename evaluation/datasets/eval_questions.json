@@ -1,0 +1,77 @@
+[
+  {
+    "category": "lookup",
+    "question": "What's the price per million input tokens for Claude Haiku 4.5?",
+    "expected_keywords": ["Haiku", "$1", "input"]
+  },
+  {
+    "category": "lookup",
+    "question": "What's the context window size of Claude Sonnet 4.6?",
+    "expected_keywords": ["Sonnet", "1M", "tokens"]
+  },
+  {
+    "category": "lookup",
+    "question": "What's the default cache lifetime for prompt caching?",
+    "expected_keywords": ["5 minutes", "default"]
+  },
+  {
+    "category": "lookup",
+    "question": "Which HTTP header carries the API version in Anthropic API requests?",
+    "expected_keywords": ["anthropic-version"]
+  },
+  {
+    "category": "lookup",
+    "question": "What's the maximum number of cache breakpoints allowed per request?",
+    "expected_keywords": ["4", "cache breakpoint"]
+  },
+  {
+    "category": "conceptual",
+    "question": "What is extended thinking in Claude?",
+    "expected_keywords": ["thinking", "reasoning"]
+  },
+  {
+    "category": "conceptual",
+    "question": "What is the difference between automatic and explicit prompt caching?",
+    "expected_keywords": ["automatic", "explicit", "cache_control"]
+  },
+  {
+    "category": "conceptual",
+    "question": "What is tool use in Claude and what does it allow?",
+    "expected_keywords": ["tool", "function", "external"]
+  },
+  {
+    "category": "conceptual",
+    "question": "What is Model Context Protocol (MCP)?",
+    "expected_keywords": ["MCP", "protocol", "connector"]
+  },
+  {
+    "category": "multi-doc",
+    "question": "How do Claude Haiku 4.5 and Claude Sonnet 4.6 compare in input pricing?",
+    "expected_keywords": ["Haiku", "Sonnet", "$1", "$3"]
+  },
+  {
+    "category": "multi-doc",
+    "question": "How much cheaper is a cache hit compared to base input pricing?",
+    "expected_keywords": ["cache hit", "0.1", "cheaper"]
+  },
+  {
+    "category": "multi-doc",
+    "question": "Which built-in tools does Claude provide for accessing the web?",
+    "expected_keywords": ["web search", "web fetch"]
+  },
+  {
+    "category": "refusal",
+    "question": "What is the weather in Tokyo today?",
+    "expected_keywords": ["don't have", "documentation"]
+  },
+  {
+    "category": "refusal",
+    "question": "How do I bake a chocolate cake?",
+    "expected_keywords": ["don't have", "documentation"]
+  },
+  {
+    "category": "api",
+    "question": "What stop_reason value does the Messages API return when Claude calls a tool?",
+    "expected_keywords": ["tool_use", "stop_reason"]
+  }
+]

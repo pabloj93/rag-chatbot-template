@@ -1,0 +1,38 @@
+services:
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: rag-backend
+    ports:
+      - "8000:8000"
+    # env_file passes every key from .env into the container's os.environ.
+    # pydantic-settings reads os.environ before the .env file, so the
+    # path-resolution logic in config.py is bypassed cleanly.
+    env_file:
+      - .env
+    # Mount the ingest cache so re-running /ingest skips HTTP fetches.
+    volumes:
+      - ./backend/data:/app/data
+    healthcheck:
+      test: ["CMD", "python", "-c",
+             "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      args:
+        # VITE_BACKEND_URL is baked into the JS bundle at build time.
+        # Browser reaches the backend at localhost:8000 via the port mapping above.
+        VITE_BACKEND_URL: "http://localhost:8000"
+    container_name: rag-frontend
+    ports:
+      - "5173:80"
+    depends_on:
+      backend:
+        condition: service_healthy
