@@ -153,7 +153,7 @@ python evaluation/run_eval.py
 |---|---|---|---|
 | V1 | Vector-only (top-5) | 82% | 9.7 s |
 | V2 reranker | Vector top-20 → cross-encoder top-5 | 82% | 12.3 s |
-| **V2 hybrid** | BM25 + vector top-20 → cross-encoder top-5 | **86%** | 14.7 s |
+| **V2 hybrid** | BM25 + vector top-20 → cross-encoder top-5 | **86%** | 14.5 s (TTFT 12.3 s) |
 
 **V2 hybrid per-category (15 questions):**
 
