@@ -9,13 +9,19 @@
 
 ---
 
+![Demo](docs/screenshots/demo.gif)
+
+---
+
 ## ✨ What this demonstrates
 
 - **RAG architecture end-to-end** — chunking, embedding, retrieval, grounding, citation enforcement
-- **LLM observability** — every query traced in LangFuse with latency, sources, and keyword-recall scores
-- **Evaluation discipline** — hand-curated 15-question eval set; 82% avg keyword recall at baseline
-- **Full-stack delivery** — FastAPI backend + React frontend + Docker compose + HF Spaces single-container
-- **Cost-aware engineering** — Claude Haiku in dev, Sonnet for demos; free-tier Pinecone serverless; local embeddings (HuggingFace MiniLM)
+- **Three-stage retrieval pipeline** — BM25 keyword search + vector semantic search (RRF fusion) → cross-encoder reranker → 86% keyword recall
+- **Multi-turn query contextualization** — follow-ups like "what's the cost?" are rewritten as standalone queries before retrieval, keeping conversation natural
+- **LLM observability** — every query traced in LangFuse with latency, TTFT, sources, and keyword-recall scores
+- **Evaluation discipline** — hand-curated 15-question eval set with progressive recall improvements documented across versions
+- **Full-stack delivery** — FastAPI backend + React frontend (sidebar, dark mode, streaming) + Docker compose + HF Spaces
+- **Cost-aware engineering** — Claude Haiku in dev; free-tier Pinecone serverless; local HuggingFace embeddings + cross-encoder (no API key)
 
 ---
 
@@ -174,17 +180,20 @@ BM25 catches exact keyword matches (`web_search`, `anthropic-version`); vector s
 
 ## 🛣️ Roadmap
 
-### V2 — RAG Quality Depth
-- [ ] Cohere reranker (top-20 → rerank → top-5)
-- [ ] Hybrid search (`EnsembleRetriever` BM25 + vector)
-- [ ] LLM-as-judge scorer alongside keyword recall
-- [ ] Token-level eval metrics (TTFT, tokens/sec)
-- [ ] Animated demo GIF + Hugging Face Space live demo
+### V2 — RAG Quality Depth ✅ Complete
+- [x] HuggingFace cross-encoder reranker (ms-marco-MiniLM, local, no API key)
+- [x] Hybrid search (`EnsembleRetriever` BM25 + vector, RRF fusion)
+- [x] Multi-turn query contextualization (follow-ups rewritten before retrieval)
+- [x] Token-level eval metrics (TTFT + chunks/sec pushed to LangFuse)
+- [x] Frontend: sidebar history, dark mode, timestamps, copy button, streaming UX
+- [x] Animated demo GIF
 
 ### V3 — Optional Stretch
+- [ ] LLM-as-judge scorer alongside keyword recall
 - [ ] GitHub Actions CI (ruff + eslint + pytest on PR)
 - [ ] Multi-doc toggle (Anthropic / FastAPI / dbt indexes)
 - [ ] Redis-backed session persistence
+- [ ] Hugging Face Space live demo
 
 ---
 
