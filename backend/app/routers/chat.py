@@ -24,12 +24,14 @@ from fastapi.responses import StreamingResponse
 from langchain_core.messages import AIMessage, BaseMessage, HumanMessage
 from pydantic import BaseModel, Field
 
+from app.config import settings
 from app.services.rag_chain import (
     build_answer_chain,
     format_docs,
     get_retriever,
     make_source,
 )
+from app.services.reranker import rerank
 from app.services.tracing import (
     enrich_trace,
     make_langfuse_handler,
@@ -105,7 +107,9 @@ def chat(req: ChatRequest) -> dict:
     handler = make_langfuse_handler(session_id)
 
     t0 = time.perf_counter()
-    docs = get_retriever().invoke(question)
+    # Stage 1: vector search returns top_k_candidates (broad).
+    # Stage 2: cross-encoder re-ranks to top_k (precise).
+    docs = rerank(question, get_retriever().invoke(question), top_n=settings.top_k)
     answer = build_answer_chain().invoke(
         {
             "context": format_docs(docs),
@@ -149,9 +153,9 @@ async def chat_stream(req: ChatRequest):
     async def event_stream():
         t0 = time.perf_counter()
         try:
-            # 1. Retrieve docs first — sources must arrive before tokens
-            #    so the frontend can render them while text streams in.
-            docs = get_retriever().invoke(question)
+            # Stage 1: vector search (broad). Stage 2: cross-encoder (precise).
+            # Sources emitted first so the frontend renders them while tokens arrive.
+            docs = rerank(question, get_retriever().invoke(question), top_n=settings.top_k)
             sources = [make_source(d) for d in docs]
             yield _sse("sources", sources)
 

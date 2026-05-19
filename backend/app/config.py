@@ -51,13 +51,19 @@ class Settings(BaseSettings):
     langfuse_host: str = "https://cloud.langfuse.com"
 
     # --- Retrieval tuning ---
-    # top_k = 5 is a balanced default for short Q&A over docs.
-    # Why: too few -> miss relevant context; too many -> context bloat and
-    # quality drop because the LLM has to filter noise.
+    # Two-stage retrieve-then-rerank pipeline:
+    #   1. top_k_candidates: how many chunks the vector search fetches first
+    #      (broad, fast cosine similarity).
+    #   2. top_k: how many of those candidates the cross-encoder keeps
+    #      (precise, slow — but only runs on top_k_candidates docs).
+    top_k_candidates: int = 20
     top_k: int = 5
     # MiniLM is the free/local embedding baseline; 384-dim, fast on CPU.
     embedding_model: str = "sentence-transformers/all-MiniLM-L6-v2"
     embedding_dim: int = 384
+    # Cross-encoder for reranking. Trained on MS MARCO (search QA) — same
+    # use-case as our doc retrieval. CPU-only, ~80 MB, no API key needed.
+    reranker_model: str = "cross-encoder/ms-marco-MiniLM-L-6-v2"
 
     # --- App ---
     app_env: str = "development"

@@ -30,3 +30,6 @@ langfuse==2.53.0
 beautifulsoup4==4.12.3
 requests==2.32.3
 lxml==5.3.0
+
+# BM25 keyword search (used by EnsembleRetriever in vectorstore.py)
+rank-bm25==0.2.2

@@ -32,8 +32,11 @@ Thumbs.db
 *.log
 logs/
 
-# Local data snapshot (raw HTML cache)
-data/raw/
+# Local data snapshot (raw HTML cache — ignored at any depth)
+**/data/raw/
+
+# Evaluation run outputs (timestamped JSONs — not source code)
+evaluation/results/
 
 # Build artifacts
 backend/static/

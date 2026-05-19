@@ -23,7 +23,7 @@ from langchain_core.runnables import Runnable
 from langchain_core.vectorstores import VectorStoreRetriever
 
 from app.config import settings
-from app.services.vectorstore import get_vectorstore
+from app.services.vectorstore import get_ensemble_retriever
 
 
 # System prompt — "balanced" style (see PRD).
@@ -52,15 +52,23 @@ Context:
 """
 
 
-def get_retriever() -> VectorStoreRetriever:
-    """Return the Pinecone-backed retriever configured for top-k similarity.
+def get_retriever():
+    """Return the hybrid BM25 + vector retriever (stage-1 of retrieve-then-rerank).
 
-    Why a separate function: the chat router needs the retrieved docs
-    *before* it streams (to emit a `sources` SSE event first). Exposing
-    the retriever here means the router calls it directly without
-    re-running it inside the answer chain.
+    Delegates to `get_ensemble_retriever()` in vectorstore.py, which:
+      1. Runs BM25 (keyword) and vector (semantic) searches in parallel.
+      2. Merges the two ranked lists via Reciprocal Rank Fusion (RRF).
+      3. Returns the top `top_k_candidates` (default 20) merged docs.
+
+    The chat router then calls `rerank()` (services/reranker.py) to narrow
+    those 20 down to `top_k` (default 5) using the cross-encoder.
+
+    Why three stages? Each adds a different signal:
+      BM25     → exact keyword matches ("web_search", "web_fetch")
+      Vector   → semantic / paraphrased matches
+      Reranker → precision — reads (query, chunk) together
     """
-    return get_vectorstore().as_retriever(search_kwargs={"k": settings.top_k})
+    return get_ensemble_retriever()
 
 
 def format_docs(docs: list[Document]) -> str:

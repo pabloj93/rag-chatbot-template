@@ -103,6 +103,7 @@ rag-chatbot-template/
 │   │       ├── vectorstore.py  # Pinecone serverless wrapper
 │   │       ├── ingest.py       # Scrape → split → embed → upsert (99 doc URLs)
 │   │       ├── rag_chain.py    # LCEL pipeline: retriever | prompt | Claude | parser
+│   │       ├── reranker.py     # HuggingFace cross-encoder singleton + rerank()
 │   │       └── tracing.py      # LangFuse CallbackHandler factory
 │   └── Dockerfile
 ├── frontend/
@@ -146,22 +147,28 @@ Run the included evaluation harness against a live backend:
 python evaluation/run_eval.py
 ```
 
-**V1 baseline results (Claude Haiku 4.5, top-k=5):**
+**Results by version (Claude Haiku 4.5):**
 
-| Metric | Value |
-|---|---|
-| Questions | 15 (5 lookup · 4 conceptual · 3 multi-doc · 2 refusal · 1 API) |
-| Avg keyword recall | **82%** |
-| Median keyword recall | 100% |
-| Avg latency | ~9.8 s |
-| P50 latency | ~9.7 s |
+| Version | Retrieval pipeline | Avg recall | P50 latency |
+|---|---|---|---|
+| V1 | Vector-only (top-5) | 82% | 9.7 s |
+| V2 reranker | Vector top-20 → cross-encoder top-5 | 82% | 12.3 s |
+| **V2 hybrid** | BM25 + vector top-20 → cross-encoder top-5 | **86%** | 14.7 s |
+
+**V2 hybrid per-category (15 questions):**
+
+| Category | Recall | Notes |
+|---|---|---|
+| API reference | 100% | |
+| Conceptual | 92% | +8% vs V1 |
+| Lookup | 83% | |
+| Multi-doc | 83% | Partial recovery vs V1 |
+| **Refusal** | **75%** | **+25% vs V1 — BM25 surface scoping context** |
 
 Scores are pushed to LangFuse automatically — visible in the dashboard grouped by trace.
 
-**Known V1 failure modes (planned for V2):**
-
-- *Retrieval gaps:* 2 questions miss because the relevant chunk isn't in top-5. V2 adds Cohere reranker + BM25 hybrid search.
-- *Refusal phrasing:* Model refuses off-topic questions correctly but uses synonyms that keyword matching misses. V2 adds LLM-as-judge.
+**Key insight:** each retrieval technique solves a different problem.
+BM25 catches exact keyword matches (`web_search`, `anthropic-version`); vector search catches semantic/paraphrased matches; cross-encoder reranker maximises precision by reading query + chunk together. Optimal recall requires all three.
 
 ---
 
